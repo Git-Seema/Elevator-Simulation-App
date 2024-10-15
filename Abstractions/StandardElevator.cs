@@ -6,7 +6,15 @@ using System.Threading.Tasks;
 
 namespace ElevatorSimulationApp.Abstractions
 {
-    internal class StandardElevator
+    public class StandardElevator : Elevator
     {
+        public StandardElevator(int maxCapacity) : base(maxCapacity) { }
+
+        public override async Task MoveToFloorAsync(int destinationFloor)
+        {
+            Console.WriteLine("Standard Elevator: Starting movement...");
+            await base.MoveToFloorAsync(destinationFloor);
+        }
     }
+
 }
