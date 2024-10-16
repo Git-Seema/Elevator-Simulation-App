@@ -10,11 +10,12 @@ namespace ElevatorSimulationApp.Abstractions
     {
         public StandardElevator(int maxCapacity) : base(maxCapacity) { }
 
-        public override async Task MoveToFloorAsync(int destinationFloor)
+        public override async Task MoveToNextRequestedFloorAsync()
         {
-            Console.WriteLine("Standard Elevator: Starting movement...");
-            await base.MoveToFloorAsync(destinationFloor);
+            Console.WriteLine("Standard elevator moving...");
+            await base.MoveToNextRequestedFloorAsync();
         }
     }
 
+    
 }

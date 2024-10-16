@@ -6,7 +6,11 @@ using System.Threading.Tasks;
 
 namespace ElevatorSimulationApp.Enum
 {
-    internal class Direction
+    // Direction of the elevator
+    public enum Direction
     {
+        Up,
+        Down,
+        Stationary
     }
 }

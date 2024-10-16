@@ -16,82 +16,117 @@ namespace ElevatorSimulationApp.Abstractions
         public bool IsMoving { get; protected set; }
         public Direction Direction { get; protected set; }
         public bool IsUnderMaintenance { get; protected set; }
-        public bool IsStuck { get; protected set; }
-        public bool FireEmergency { get; protected set; }
+        public bool IsStuck { get; set; }
+        public bool FireEmergency { get; set; }
+
+        // Dictionary to store destinations and passenger counts
+        protected Dictionary<int, int> PassengerDestinations = new Dictionary<int, int>();
 
         protected Elevator(int maxCapacity)
         {
             MaxCapacity = maxCapacity;
-            PassengerCount = 0;
             CurrentFloor = 0;
+            PassengerCount = 0;
             IsMoving = false;
             Direction = Direction.Stationary;
         }
 
-        public virtual async Task MoveToFloorAsync(int destinationFloor)
+        public virtual async Task MoveToNextRequestedFloorAsync()
         {
-            if (IsUnderMaintenance || IsStuck || FireEmergency)
+            while (PassengerDestinations.Any() && !IsStuck && !FireEmergency)
             {
-                Console.WriteLine("Elevator cannot move due to emergency or maintenance.");
+                int nextFloor = PassengerDestinations.Keys.Min();
+                Direction = nextFloor > CurrentFloor ? Direction.Up : Direction.Down;
+
+                while (CurrentFloor != nextFloor && !IsStuck)
+                {
+                    await Task.Delay(1000);
+                    CurrentFloor += Direction == Direction.Up ? 1 : -1;
+                    Console.WriteLine($"Elevator at floor {CurrentFloor}.");
+                }
+
+                Console.WriteLine($"Arrived at floor {nextFloor}.");
+                RemovePassengersAtFloor(nextFloor);
+                AllowNewPassengers();
+            }
+
+            Direction = Direction.Stationary;
+            IsMoving = false;
+        }
+
+        public void AddPassengers(int count, List<int> destinations)
+        {
+            if (PassengerCount + count > MaxCapacity)
+            {
+                Console.WriteLine("Elevator is full.");
                 return;
             }
 
-            IsMoving = true;
-            Direction = destinationFloor > CurrentFloor ? Direction.Up : Direction.Down;
-
-            while (CurrentFloor != destinationFloor && !IsStuck)
+            foreach (var destination in destinations)
             {
-                await Task.Delay(1000); // Simulate floor-to-floor movement
-                CurrentFloor += Direction == Direction.Up ? 1 : -1;
-                Console.WriteLine($"Elevator at floor {CurrentFloor}.");
+                if (PassengerDestinations.ContainsKey(destination))
+                    PassengerDestinations[destination]++;
+                else
+                    PassengerDestinations[destination] = 1;
             }
 
-            IsMoving = false;
-            Direction = Direction.Stationary;
+            PassengerCount += count;
+            Console.WriteLine($"{count} passengers added. Destinations: {string.Join(", ", destinations)}.");
         }
 
-        public virtual bool CanAcceptPassengers(int count)
+        public void RemovePassengersAtFloor(int floor)
         {
-            return !IsUnderMaintenance && PassengerCount + count <= MaxCapacity && !IsStuck;
-        }
-
-        public virtual void AddPassengers(int count)
-        {
-            if (CanAcceptPassengers(count))
+            if (PassengerDestinations.ContainsKey(floor))
             {
-                PassengerCount += count;
-                Console.WriteLine($"{count} passengers added.");
+                int exitingPassengers = PassengerDestinations[floor];
+                PassengerCount -= exitingPassengers;
+                PassengerDestinations.Remove(floor);
+                Console.WriteLine($"{exitingPassengers} passengers exited at floor {floor}.");
             }
             else
             {
-                Console.WriteLine("Cannot add passengers. Elevator is either full, under maintenance, or stuck.");
+                Console.WriteLine($"No passengers exited at floor {floor}.");
+            }
+
+            Console.WriteLine($"Remaining passengers: {PassengerCount}.");
+        }
+
+        public void AllowNewPassengers()
+        {
+            Console.Write("Enter number of new passengers: ");
+            int newPassengers = int.Parse(Console.ReadLine());
+
+            if (newPassengers > 0)
+            {
+                List<int> newDestinations = new List<int>();
+                for (int i = 0; i < newPassengers; i++)
+                {
+                    Console.Write($"Enter destination for new passenger {i + 1}: ");
+                    newDestinations.Add(int.Parse(Console.ReadLine()));
+                }
+
+                AddPassengers(newPassengers, newDestinations);
+            }
+            else
+            {
+                Console.WriteLine("No new passengers entered.");
             }
         }
 
-        public virtual void RemovePassengers(int count)
-        {
-            PassengerCount = Math.Max(0, PassengerCount - count);
-            Console.WriteLine($"{count} passengers removed.");
-        }
+        public void TriggerEmergencyStop() => IsStuck = true;
 
-        public void TriggerEmergencyStop()
+        public void SetMaintenanceMode(bool status) => IsUnderMaintenance = status;
+
+        public void ReportStuck() => TriggerEmergencyStop();
+
+        public void TriggerFireEmergency() => FireEmergency = true;
+
+        public void ResetStatus()
         {
+            IsStuck = false;
+            FireEmergency = false;
             IsMoving = false;
-            IsStuck = true;
-            Console.WriteLine("Emergency stop triggered. Elevator is stuck.");
-        }
-
-        public void SetMaintenanceMode(bool status)
-        {
-            IsUnderMaintenance = status;
-            Console.WriteLine($"Maintenance mode {(status ? "enabled" : "disabled")}.");
-        }
-
-        public void ReportStuck()
-        {
-            IsStuck = true;
-            Console.WriteLine("Elevator is stuck.");
+            Console.WriteLine("Elevator status reset.");
         }
     }
-
 }

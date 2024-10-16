@@ -6,7 +6,10 @@ using System.Threading.Tasks;
 
 namespace ElevatorSimulationApp.Interface_Classes
 {
-    internal class IFloor
+    // Interface for floors
+    public interface IFloor
     {
+        int FloorNumber { get; }
+        Task CallElevatorAsync(int passengers);
     }
 }

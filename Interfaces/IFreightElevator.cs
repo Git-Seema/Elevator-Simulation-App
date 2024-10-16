@@ -6,7 +6,14 @@ using System.Threading.Tasks;
 
 namespace ElevatorSimulationApp.Interfaces
 {
-    internal class IFreightElevator
+    public interface IFreightElevator
     {
+        double CurrentLoad { get; }
+        double MaxWeightCapacity { get; }
+
+        bool CanAcceptLoad(double weight);
+        void AddLoad(double weight);
+        void RemoveLoad(double weight);
     }
+
 }
